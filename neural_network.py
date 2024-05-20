@@ -50,10 +50,13 @@ class NeuralNetwork:
     def train(self, X, y, epochs, learning_rate):
         training_progress = []
         for epoch in range(epochs):
-            print(f'Epoch: {epoch} of {epochs}')
+
             output = self.forward(X)
             accuracy = self.backward(X, y, output, learning_rate)
             training_progress.append(accuracy)
+
+            if (epoch + 1) % 100 == 0:
+                print(f'Epoch: {epoch} of {epochs}')
 
         return training_progress
 

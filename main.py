@@ -1,14 +1,43 @@
 import numpy as np
+import torch
+
 import neural_network as cust_nn
 import quantized_nn as qnn
 import custom_optimizers as cust_optims
-import tensorflow as tf
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.metrics import SparseCategoricalAccuracy
+import custom_pytorch_models as cust_py_nn
 import matplotlib.pyplot as plt
 import time
 
 
+# Plot comparison
+def plot_comparison(models):
+    plt.figure(figsize=(12, 5))
+
+    for i, model in enumerate(models):
+        epochs = range(1, len(model.train_losses) + 1)
+
+        # Plot training loss
+        plt.subplot(1, 2, 1)
+        plt.plot(epochs, model.train_losses, label=f'Model {i + 1} Training Loss')
+
+        # Plot training accuracy
+        plt.subplot(1, 2, 2)
+        plt.plot(epochs, model.train_accuracies, label=f'Model {i + 1} Training Accuracy')
+
+    plt.subplot(1, 2, 1)
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Training Loss vs. Epochs')
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.title('Training Accuracy vs. Epochs')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
 
 def main():
     # Input data (4 samples, 2 features each)
@@ -38,11 +67,35 @@ def main():
     normal_nn_training_time = time.time() - start_time
     print(f"Normal NN training time: {normal_nn_training_time} seconds")
 
+    # Adjust numpy print options
+    np.set_printoptions(precision=4, suppress=True)
 
     # Test the neural network
     output = normal_nn.forward(X)
     print("Predicted output:")
     print(output)
+
+    pyt_nn = cust_py_nn.XOR_Model(input_size, hidden_size, output_size)
+    # Start timing
+    start_time = time.time()
+    pyt_nn.train_model(torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32),
+                       epochs)
+    # End timing for normal neural network training
+    pyt_nn_training_time = time.time() - start_time
+    print(f"Pytorch NN training time: {pyt_nn_training_time} seconds")
+
+    # Test the model
+    pyt_nn.eval()
+    with torch.no_grad():
+        predictions = pyt_nn(torch.tensor(X, dtype=torch.float32))
+        print('Predictions:')
+        print(predictions)
+        accuracy = pyt_nn.calculate_accuracy(predictions, torch.tensor(y, dtype=torch.float32))
+        print(f'Accuracy: {accuracy}')
+        print('Rounded Predictions:')
+        print(torch.round(predictions))
+
+    pyt_nn.plot_metrics()
 
     # Define the quantized neural network
     input_size = 2

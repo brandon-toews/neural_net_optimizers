@@ -64,12 +64,12 @@ class GeneticAlgorithm:
         """
         Mutates an individual's weights and biases by slightly adjusting them.
 
-        Parameters:
-        -individual: The neural network weights and biases to mutate.
-        -max_delta: The maximum change that can be applied to a weight.
+        Args:
+            individual: The neural network weights and biases to mutate.
+            max_delta: The maximum change that can be applied to a weight.
 
         Returns:
-        - The mutated individual.
+            The mutated individual.
         """
         for which_layer in range(len(individual[0])):
             if np.random.rand() < self.mutation_rate:

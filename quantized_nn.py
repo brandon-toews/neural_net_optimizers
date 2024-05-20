@@ -12,6 +12,9 @@ class Quantized_NN:
         self.weights = []
         self.biases = []
 
+        self.train_losses = []
+        self.train_accuracies = []
+
         # Initialize the optimizer
         self.optimizer = None
 
