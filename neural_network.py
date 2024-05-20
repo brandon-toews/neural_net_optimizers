@@ -45,10 +45,16 @@ class NeuralNetwork:
         self.weights_input_hidden += X.T.dot(d_hidden) * learning_rate
         self.bias_hidden += np.sum(d_hidden, axis=0) * learning_rate
 
+        return accuracy
+
     def train(self, X, y, epochs, learning_rate):
+        training_progress = []
         for epoch in range(epochs):
             print(f'Epoch: {epoch} of {epochs}')
             output = self.forward(X)
-            self.backward(X, y, output, learning_rate)
+            accuracy = self.backward(X, y, output, learning_rate)
+            training_progress.append(accuracy)
+
+        return training_progress
 
 
