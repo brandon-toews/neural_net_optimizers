@@ -75,11 +75,14 @@ def main():
     print("Predicted output:")
     print(output)
 
+    # Tensorize the input and output data
+    tensor_X = torch.tensor(X, dtype=torch.float32)
+    tensor_y = torch.tensor(y, dtype=torch.float32)
+
     pyt_nn = cust_py_nn.XOR_Model(input_size, hidden_size, output_size)
     # Start timing
     start_time = time.time()
-    pyt_nn.train_model(torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32),
-                       epochs)
+    pyt_nn.train_model(tensor_X, tensor_y, epochs)
     # End timing for normal neural network training
     pyt_nn_training_time = time.time() - start_time
     print(f"Pytorch NN training time: {pyt_nn_training_time} seconds")
@@ -87,15 +90,46 @@ def main():
     # Test the model
     pyt_nn.eval()
     with torch.no_grad():
-        predictions = pyt_nn(torch.tensor(X, dtype=torch.float32))
+        predictions = pyt_nn(tensor_X)
         print('Predictions:')
         print(predictions)
-        accuracy = pyt_nn.calculate_accuracy(predictions, torch.tensor(y, dtype=torch.float32))
+        accuracy = pyt_nn.calculate_accuracy(predictions, tensor_y)
         print(f'Accuracy: {accuracy}')
         print('Rounded Predictions:')
         print(torch.round(predictions))
 
-    pyt_nn.plot_metrics()
+    # pyt_nn.plot_metrics()
+
+    pyt_GA = cust_py_nn.XOR_GA_Model(input_size, hidden_size, output_size)
+
+    # Define the optimizer
+    generations = 50
+    pop_size = 20
+    mutation_rate = 0.3
+    weight_range = 40
+
+    # Start timing
+    start_time = time.time()
+    pyt_GA.train_model(tensor_X, tensor_y, generations, pop_size, mutation_rate, weight_range)
+    # End timing for normal neural network training
+    pyt_GA_training_time = time.time() - start_time
+    print(f"Pytorch NN training time: {pyt_GA_training_time} seconds")
+
+    # Test the model
+    pyt_GA.eval()
+    with torch.no_grad():
+        predictions = pyt_GA(tensor_X)
+        print('Predictions:')
+        print(predictions)
+        accuracy = pyt_nn.calculate_accuracy(predictions, tensor_y)
+        print(f'Accuracy: {accuracy}')
+        print('Rounded Predictions:')
+        print(torch.round(predictions))
+
+    # pyt_nn.plot_metrics()
+
+    plot_comparison([pyt_nn, pyt_GA])
+
 
     # Define the quantized neural network
     input_size = 2
