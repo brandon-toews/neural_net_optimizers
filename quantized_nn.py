@@ -1,12 +1,13 @@
 import numpy as np
-import custom_optimizers as cust_optims
+from numba import njit
 
 # Define a custom neural network class to create a quantized neural network
 class Quantized_NN:
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, data_type=np.int8, criterion='MSE'):
         # Initialize the input and output size
         self.input_size = input_size
         self.output_size = output_size
+        self.data_type = data_type
         # Initialize the layers, weights, and biases
         self.layers = []
         self.weights = []
@@ -17,6 +18,8 @@ class Quantized_NN:
 
         # Initialize the optimizer
         self.optimizer = None
+
+        self.criterion = criterion
 
         # Dictionary of activation functions
         self.activation_function = {
@@ -32,6 +35,7 @@ class Quantized_NN:
             'batch_norm': self.batch_norm
         }
 
+
     # Add a hidden layer to the neural network
     def add_hidden_layer(self, layer_type, neuron_size):
         # Append the activation function to the layers list
@@ -39,16 +43,16 @@ class Quantized_NN:
         # If there are no weights, initialize the weights for the input layer
         if not self.weights:
             # Initialize the weights for the input layer
-            self.weights.append(np.zeros((self.input_size, neuron_size), np.int8))
+            self.weights.append(np.zeros((self.input_size, neuron_size), self.data_type))
         # If there are weights, initialize the weights for the next layer
         else:
             # Get the size of the next layer's input
             next_layers_input_size = self.weights[-1].shape[1]
             # Initialize the weights for the next layer
-            self.weights.append(np.zeros((next_layers_input_size, neuron_size), np.int8))
+            self.weights.append(np.zeros((next_layers_input_size, neuron_size), self.data_type))
 
         # Initialize the biases for the layer based on the neuron size
-        self.biases.append(np.zeros(neuron_size, np.int8))
+        self.biases.append(np.zeros(neuron_size, self.data_type))
 
     # Add an output layer to the neural network
     def add_output_layer(self, layer_type):
@@ -57,15 +61,22 @@ class Quantized_NN:
         # If there are no weights, initialize the weights for the input layer
         if not self.weights:
             # Initialize the weights for the input layer
-            self.weights.append(np.zeros((self.input_size, self.output_size), np.int8))
+            self.weights.append(np.zeros((self.input_size, self.output_size), self.data_type))
         # If there are weights, initialize the weights for the next layer
         else:
             # Get the size of the output layer's input
             output_layers_input_size = self.weights[-1].shape[1]
             # Initialize the weights for the output layer
-            self.weights.append(np.zeros((output_layers_input_size, self.output_size), np.int8))
+            self.weights.append(np.zeros((output_layers_input_size, self.output_size), self.data_type))
         # Initialize the biases for the output layer based on the output size
-        self.biases.append(np.zeros(self.output_size, np.int8))
+        self.biases.append(np.zeros(self.output_size, self.data_type))
+
+    @staticmethod
+    @njit
+    def calculate_loss(outputs, targets):
+        epsilon = 1e-7
+        loss = -np.sum(targets * np.log(outputs + epsilon)) / targets.shape[0]
+        return loss
 
     # Forward pass through the neural network
     def forward(self, x):
@@ -78,14 +89,45 @@ class Quantized_NN:
         # Return the final outputs
         return outputs
 
-    # Return the weights and biases of the neural network
+    def flatten_weights(self):
+        """Flatten the weight matrices into a single 1D array."""
+        flat_weights = np.concatenate([w.flatten() for w in self.weights] + [b.flatten() for b in self.biases])
+        return flat_weights
+
+    def reshape_weights(self, flat_weights):
+        """Reshape a 1D array of weights back into the original weight matrices."""
+        weights, biases = [], []
+        index = 0
+        for w in self.weights:
+            size = w.size
+            weights.append(flat_weights[index:index + size].reshape(w.shape))
+            index += size
+        for b in self.biases:
+            size = b.size
+            biases.append(flat_weights[index:index + size].reshape(b.shape))
+            index += size
+        return weights, biases
+
+
+    def get_parameters(self):
+        # Return the flattened weights and biases
+        flat_parameters = self.flatten_weights()
+        return flat_parameters
+
+    def set_parameters(self, flat_parameters):
+        # Reshape and set the weights and biases from flattened parameters
+        weights, biases = self.reshape_weights(flat_parameters)
+        self.weights = weights
+        self.biases = biases
+
+    '''# Return the weights and biases of the neural network
     def get_parameters(self):
         return [self.weights, self.biases]
 
     # Set the weights and biases of the neural network
     def set_parameters(self, new_parameters):
         self.weights = new_parameters[0]
-        self.biases = new_parameters[1]
+        self.biases = new_parameters[1]'''
 
     # Fit the neural network using the specified optimizer
     def fit(self, X, y, epochs):
@@ -101,43 +143,53 @@ class Quantized_NN:
         return self.forward(X)
 
     # Activation functions
+
     @staticmethod
+    @njit
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
 
     @staticmethod
+    @njit
     def relu(x):
         return np.maximum(0, x)
 
     @staticmethod
     def softmax(x):
-        exps = np.exp(x - np.max(x))
-        return exps / np.sum(exps)
+        exps = np.exp(x - np.max(x, axis=1, keepdims=True))
+        return exps / np.sum(exps, axis=1, keepdims=True)
 
     @staticmethod
+    @njit
     def tanh(x):
         return np.tanh(x)
 
     @staticmethod
+    @njit
     def conv2d(x, kernel):
         return np.convolve(x, kernel, mode='valid')
 
     @staticmethod
+    @njit
     def max_pooling(x, pool_size):
         return np.max(x.reshape(-1, pool_size), axis=1)
 
     @staticmethod
+    @njit
     def avg_pooling(x, pool_size):
         return np.mean(x.reshape(-1, pool_size), axis=1)
 
     @staticmethod
+    @njit
     def flatten(x):
         return x.flatten()
 
     @staticmethod
+    @njit
     def dropout(x, rate):
         return x * np.random.binomial(1, 1-rate, size=x.shape)
 
     @staticmethod
+    @njit
     def batch_norm(x, mean, var):
         return (x - mean) / np.sqrt(var + 1e-8)

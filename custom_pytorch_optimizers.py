@@ -56,6 +56,25 @@ class GeneticAlgorithmOptimizer(Optimizer):
             child2.append(child2_layer)
         return child1, child2
 
+    def neuron_crossover(self, parent1, parent2):
+        child1, child2 = [], []
+        for layer1, layer2 in zip(parent1, parent2):
+            shape = layer1.shape
+            num_neurons = shape[1] if len(shape) > 1 else shape[0]  # Adjust for biases
+            child1_layer = np.copy(layer1)
+            child2_layer = np.copy(layer2)
+            for i in range(num_neurons):
+                if np.random.rand() < 0.5:
+                    if len(shape) > 1:  # Weights
+                        child1_layer[:, i] = layer2[:, i]
+                        child2_layer[:, i] = layer1[:, i]
+                    else:  # Biases
+                        child1_layer[i] = layer2[i]
+                        child2_layer[i] = layer1[i]
+            child1.append(child1_layer)
+            child2.append(child2_layer)
+        return child1, child2
+
     def mutate(self, individual, max_delta=10):
         for i in range(len(individual)):
             if np.random.rand() < self.mutation_rate:
@@ -67,7 +86,7 @@ class GeneticAlgorithmOptimizer(Optimizer):
         if closure is not None:
             closure()
 
-        X, y = closure()
+        X, y, _ = closure()
         fitness_scores = []
         for individual in self.population:
             self._set_model_parameters(individual)
@@ -82,12 +101,14 @@ class GeneticAlgorithmOptimizer(Optimizer):
         while len(new_population) < self.population_size:
             parent1, parent2 = sorted_population[np.random.choice(len(sorted_population))], sorted_population[np.random.choice(len(sorted_population))]
             # parent1, parent2 = np.random.choice(sorted_population, 2, replace=False)
-            child1, child2 = self.crossover(parent1, parent2)
+            child1, child2 = self.neuron_crossover(parent1, parent2)
             new_population.append(self.mutate(child1))
             new_population.append(self.mutate(child2))
         self.population = new_population
 
         self._set_model_parameters(self.best_solution[1])
         return self.best_solution[0]
+
+
 
 

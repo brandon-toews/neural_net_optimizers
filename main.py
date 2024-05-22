@@ -141,12 +141,12 @@ def main():
 
     # Define the optimizer
     pop_size = 20
-    mutation_rate = 0.3
-    weight_range = 40
+    mutation_rate = 0.02
+    weight_range = 100
     q_nn.optimizer = cust_optims.GeneticAlgorithm(q_nn, pop_size, mutation_rate, weight_range)
 
     # Train quantized neural network
-    epochs = 50
+    epochs = 20
 
     # Reset start time for quantized neural network training
     start_time = time.time()
