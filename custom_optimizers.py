@@ -90,18 +90,6 @@ class GeneticAlgorithm:
         child2[crossover_mask] = parent1[crossover_mask]
         return child1, child2
 
-    '''def crossover(self, parent1, parent2):
-        # One-point crossover
-        weights_point = np.random.randint(1, (len(parent1)//2))
-        biases_point = np.random.randint((len(parent1)//2), len(parent1) - 1)
-        child1 = np.concatenate((parent1[:weights_point],
-                                 parent2[weights_point:biases_point],
-                                 parent1[biases_point:]))
-        child2 = np.concatenate((parent2[:weights_point],
-                                 parent1[weights_point:biases_point],
-                                 parent2[biases_point:]))
-
-        return child1, child2'''
 
     @staticmethod
     @njit
@@ -135,24 +123,6 @@ class GeneticAlgorithm:
         else:
             return individual
 
-    '''# Function to generate the initial population
-    def generate_population(self, initial_individual, population_size, weight_range=2):
-        low = -np.int8(weight_range / 2)
-        high = np.int8(weight_range / 2)
-        population = []
-        for i in range(population_size):
-            new_individual = ([], [])
-            for weights, biases in zip(initial_individual[0], initial_individual[1]):
-                layer_weight_shape = weights.shape
-                layer_biases_shape = biases.shape
-                new_individual[0].append(
-                    np.random.randint(low, high, (layer_weight_shape[0], layer_weight_shape[1]), np.int8))
-                new_individual[1].append(np.zeros(layer_biases_shape, np.int8))
-
-            population.append(new_individual)
-
-        return population'''
-
     def fitness_function(self, X, y):
         predictions = self.nn.forward(X)
         return self.loss_function[self.criterion](predictions, y)
@@ -174,95 +144,7 @@ class GeneticAlgorithm:
         #return loss
         return 1 / (loss + 1)
 
-    '''def crossover(self, parent1, parent2):
-        child1, child2 = [[], []], [[], []]
-        for i in range(len(parent1[0])):
-            # Correctly create an array with the shape of the parent's layer, filled with zeros
-            child1[0].append(np.zeros(parent1[0][i].shape, np.int8))
-            child1[1].append(np.zeros(parent1[1][i].shape, np.int8))
-            child2[0].append(np.zeros(parent2[0][i].shape, np.int8))
-            child2[1].append(np.zeros(parent2[1][i].shape, np.int8))
-            if np.random.rand() < 0.5:
-                child1[1][i] = parent1[1][i]
-                child2[1][i] = parent2[1][i]
-            else:
-                child2[1][i] = parent1[1][i]
-                child1[1][i] = parent2[1][i]
-            for n in range(len(parent1[0][i])):
-                if np.random.rand() < 0.5:
-                    child1[0][i][n] = parent1[0][i][n]
-                    child2[0][i][n] = parent2[0][i][n]
-                else:
-                    child2[0][i][n] = parent1[0][i][n]
-                    child1[0][i][n] = parent2[0][i][n]
 
-        return child1, child2'''
-
-    def new_mutate(self, individual, max_delta=10):
-        for i in range(len(individual)):
-            if np.random.rand() < self.mutation_rate:
-                delta = np.random.uniform(-max_delta, max_delta, individual[i].shape).astype(np.int8)
-                individual[i] += delta
-        return individual
-
-    def old_mutate(self, individual, max_delta=10):
-        for which_layer in range(len(individual[0])):
-            if np.random.rand() < self.mutation_rate:
-                # Calculate the number of neurons/weights to mutate
-                num_neurons_to_mutate = max(1, int(10 * individual[0][which_layer].shape[0]))
-                num_weights_to_mutate = max(1, int(10 * individual[0][which_layer].shape[1]))
-                for _ in range(num_neurons_to_mutate):
-                    which_neuron = np.random.randint(individual[0][which_layer].shape[0])
-                    for _ in range(num_weights_to_mutate):
-                        which_weight = np.random.randint(individual[0][which_layer].shape[1])
-                        delta = np.random.randint(-max_delta, max_delta, 1, np.int8)
-                        # individual[0][which_layer][which_neuron, which_weight] += delta[0]
-                        # Apply delta and clip to avoid overflow
-                        individual[0][which_layer][which_neuron, which_weight] = np.clip(
-                            individual[0][which_layer][which_neuron, which_weight] + delta[0],
-                            -110, 110)
-                for _ in range(num_neurons_to_mutate):
-                    which_bias = np.random.randint(individual[1][which_layer].shape)
-                    delta = np.random.randint(-1, 2, 1, np.int8)
-                    individual[1][which_layer][which_bias] += delta
-                    individual[1][which_layer][which_bias] = np.clip(
-                        individual[1][which_layer][which_bias], -1, 1
-                    )
-        return individual
-
-    '''def mutate(self, individual, max_delta=50):
-        """
-        Mutates an individual's weights and biases by slightly adjusting them.
-
-        Args:
-            individual: The neural network weights and biases to mutate.
-            max_delta: The maximum change that can be applied to a weight.
-
-        Returns:
-            The mutated individual.
-        """
-        for which_layer in range(len(individual[0])):
-            if np.random.rand() < self.mutation_rate:
-                # low = -weight_range/2
-
-                which_neuron = np.random.randint(individual[0][which_layer].shape[0])
-                for which_weight in range(individual[0][which_layer].shape[1]):
-                    # Generate a small change, ensuring it's within the range [-max_delta, max_delta]
-                    delta = np.random.randint(-max_delta, max_delta, 1, np.int8)
-                    # Apply the change to the weight
-                    individual[0][which_layer][which_neuron, which_weight] += delta[0]
-                    # Optional: Clip the weights to ensure they remain within a desired range, e.g., [-1, 1]
-                    # individual[which_layer][which_neuron, which_weight] = np.clip(
-                    # individual[which_layer][which_neuron, which_weight], -20, 20)
-
-                which_bias = np.random.randint(individual[1][which_layer].shape)
-                # Generate a small change, ensuring it's within the range [-max_delta, max_delta]
-                delta = np.random.randint(-1, 2, 1, np.int8)
-                individual[1][which_layer][which_bias] += delta
-                individual[1][which_layer][which_bias] = np.clip(
-                    individual[1][which_layer][which_bias], -1, 1
-                )
-        return individual'''
 
     # Function to train the neural network using genetic algorithm
     def train(self, X, y, generations=50):
@@ -325,3 +207,67 @@ class GeneticAlgorithm:
         print(f'Accuracy: {best_solution[0]}')
 
         return training_progress
+
+
+class ParticleSwarm:
+    def __init__(self, neural_net, weight_range=1300, num_particles=20, c1=2.0, c2=2.0, w=0.5, v_max=0.1):
+        self.nn = neural_net
+        self.weight_range = weight_range
+        self.num_particles = num_particles
+        self.c1 = c1
+        self.c2 = c2
+        self.w = w
+        self.v_max = v_max
+        self.p_min = np.iinfo(self.nn.data_type).min * 0.66
+        self.p_max = np.iinfo(self.nn.data_type).max * 0.66
+        self.particles = self.generate_particles(self.num_particles, self.weight_range)
+        self.global_best_position = None
+        self.global_best_fitness = float('inf')
+
+    def generate_particles(self, num_particles, weight_range):
+        particles = []
+        for i in range(num_particles):
+            new_particle = Particle(self.nn.get_parameters(), weight_range, self.p_min, self.p_max, self.v_max, self.nn.data_type)
+            particles.append(new_particle)
+        return particles
+
+    def fitness_function(self, X, y):
+        predictions = self.nn.forward(X)
+        return self.nn.calculate_loss(predictions, y)
+
+    def step(self, X, y):
+        if self.global_best_position is None:
+            self.global_best_position = self.nn.get_parameters()
+
+        for particle in self.particles:
+            r1, r2 = np.random.rand(2)
+            cognitive_velocity = self.c1 * r1 * (particle.best_position - particle.position)
+            social_velocity = self.c2 * r2 * (self.global_best_position - particle.position)
+
+            # Update and clip velocity
+            particle.velocity = particle.velocity + cognitive_velocity + social_velocity
+
+            # Update and clip position
+            particle.position = particle.position + particle.velocity
+
+            self.nn.set_parameters(particle.position)
+            current_fitness = self.fitness_function(X, y)
+
+            if current_fitness < particle.best_fitness:
+                particle.best_fitness = current_fitness
+                particle.best_position = copy.deepcopy(particle.position)
+
+            if current_fitness < self.global_best_fitness:
+                self.global_best_fitness = current_fitness
+                self.global_best_position = copy.deepcopy(particle.position)
+
+        self.nn.set_parameters(self.global_best_position)
+        return self.global_best_fitness
+
+
+class Particle:
+    def __init__(self, initial_position, weight_range, p_min, p_max, v_max, data_type):
+        self.position = np.random.uniform(p_min, p_max, initial_position.shape).astype(data_type)
+        self.velocity = np.random.uniform(-v_max, v_max, initial_position.shape).astype(data_type)
+        self.best_position = copy.deepcopy(self.position)
+        self.best_fitness = float('inf')

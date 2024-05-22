@@ -18,11 +18,11 @@ def plot_comparison(models):
 
         # Plot training loss
         plt.subplot(1, 2, 1)
-        plt.plot(epochs, model.train_losses, label=f'Model {i + 1} Training Loss')
+        plt.plot(epochs, model.train_losses, label=f'{model.name} Training Loss')
 
         # Plot training accuracy
         plt.subplot(1, 2, 2)
-        plt.plot(epochs, model.train_accuracies, label=f'Model {i + 1} Training Accuracy')
+        plt.plot(epochs, model.train_accuracies, label=f'{model.name} Training Accuracy')
 
     plt.subplot(1, 2, 1)
     plt.xlabel('Epochs')
@@ -132,18 +132,18 @@ def main():
 
     # Define the optimizer
     iterations = 50
-    weight_range = 1300
-    num_particles = 100
+    weight_range = 1800
+    num_particles = 20
     c1 = 2.0
     c2 = 2.0
-    w = 0.5
+    w = 0.4
 
     # Start timing
     start_time = time.time()
     pyt_PSO.train_model(tensor_X, tensor_y, iterations, weight_range, num_particles, c1, c2, w)
     # End timing for normal neural network training
     pyt_PSO_training_time = time.time() - start_time
-    print(f"Pytorch PSO NN training time: {pyt_GA_training_time} seconds")
+    print(f"Pytorch PSO NN training time: {pyt_PSO_training_time} seconds")
 
     # Test the model
     pyt_PSO.eval()

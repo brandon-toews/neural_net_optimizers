@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 from numba import njit
 import neural_network as cust_nn
 import quantized_nn as qnn
@@ -14,8 +13,11 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
+
 # Define transformations for the training set, augmenting the data
 transform = transforms.Compose([
+    transforms.RandomRotation(10),
+    transforms.RandomAffine(0, translate=(0.1, 0.1)),
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,))
 ])
@@ -24,8 +26,9 @@ transform = transforms.Compose([
 train_set = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
 test_set = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
 
-train_loader = DataLoader(train_set, batch_size=64, shuffle=True)
-test_loader = DataLoader(test_set, batch_size=64, shuffle=False)
+train_loader = DataLoader(train_set, batch_size=64, shuffle=True, num_workers=4)
+test_loader = DataLoader(test_set, batch_size=64, shuffle=False, num_workers=4)
+
 
 '''# Initialize the PyTorch model
 model = cust_py_nn.Mnist_Model()
@@ -38,11 +41,11 @@ model.train_model(train_loader, 3)
 # End timing for normal neural network training
 pyt_nn_training_time = time.time() - start_time
 print(f"Pytorch Adam training time: {pyt_nn_training_time} seconds")
-accuracy = model.evaluate_model(test_loader)
+accuracy = cust_py_nn.evaluate_model(model, test_loader)
 print(f'Standard PyTorch Model Accuracy: {accuracy}%')
 cust_py_nn.plot_metrics(model)'''
 
-# Define the parameters for the genetic algorithm optimizer
+'''# Define the parameters for the genetic algorithm optimizer
 population_size = 5
 mutation_rate = 0.1
 weight_range = 1300
@@ -56,9 +59,34 @@ ga_pytorch_model.train_model(train_loader, 10)
 # End timing for GA neural network training
 pyt_nn_training_time = time.time() - start_time
 print(f"Pytorch GA training time: {pyt_nn_training_time} seconds")
-accuracy = ga_pytorch_model.evaluate_model(test_loader)
+accuracy = cust_py_nn.evaluate_model(ga_pytorch_model, test_loader)
 print(f'Genetic Algorithm PyTorch Model Accuracy: {accuracy}%')
-cust_py_nn.plot_metrics(ga_pytorch_model)
+cust_py_nn.plot_metrics(ga_pytorch_model)'''
+
+'''# Define the optimizer
+iterations = 20
+weight_range = 1
+num_particles = 20
+c1 = (2, 0.5)
+c2 = (0.5, 2)
+w = (0.9, 0.4)
+decay_rate = 0.01
+
+# Initialize the PyTorch model with the genetic algorithm optimizer
+pso_pytorch_model = cust_py_nn.Mnist_PSO_Model(weight_range, num_particles, c1, c2, w, decay_rate)
+
+compiled_pso = torch.compile(pso_pytorch_model)
+
+# Start timing
+start_time = time.time()
+# Training the pytorch model with genetic algorithm optimizer
+compiled_pso.train_model(train_loader, iterations)
+# End timing for GA neural network training
+pyt_nn_training_time = time.time() - start_time
+print(f"Pytorch PSO training time: {pyt_nn_training_time} seconds")
+accuracy = cust_py_nn.evaluate_model(compiled_pso, test_loader)
+print(f'Particle Swarm PyTorch Model Accuracy: {accuracy}%')
+cust_py_nn.plot_metrics(compiled_pso)'''
 
 
 # Convert data loaders to numpy arrays
@@ -95,7 +123,7 @@ test_labels_one_hot = np.eye(10)[test_labels]
 # Define the parameters for the genetic algorithm optimizer
 population_size = 20
 mutation_rate = 0.03
-weight_range = 60000
+weight_range = 1
 
 # Initialize quantized neural network with genetic algorithm optimizer
 quantized_ga_model = qnn.Quantized_NN(28 * 28, 10, np.int8, 'CrossEntropy')
@@ -107,7 +135,7 @@ quantized_ga_model.optimizer = cust_optims.GeneticAlgorithm(quantized_ga_model, 
 # Start timing
 start_time = time.time()
 # Training the quantized neural network with genetic algorithm optimizer
-quantized_ga_model.fit(train_data, train_labels_one_hot, 20)
+quantized_ga_model.fit(train_data, train_labels_one_hot, 3)
 # End timing for GA neural network training
 quantized_ga_training_time = time.time() - start_time
 print(f"Quantized GA training time: {quantized_ga_training_time} seconds")
@@ -123,6 +151,42 @@ accuracy = np.mean(predicted_labels == test_labels) * 100
 print(f"Test Accuracy: {accuracy}%")
 
 
+# Define the optimizer parameters
+iterations = 20
+weight_range = 1
+num_particles = 20
+c1 = 2.0
+c2 = 2.0
+w = 0.5
+v_max = 0.1
+
+# Initialize quantized neural network with PSO optimizer
+quantized_pso_model = qnn.Quantized_NN(28 * 28, 10, np.int8, 'CrossEntropy')
+quantized_pso_model.add_hidden_layer('relu', 128)
+quantized_pso_model.add_hidden_layer('relu', 64)
+quantized_pso_model.add_output_layer('softmax')
+quantized_pso_model.optimizer = cust_optims.ParticleSwarm(quantized_pso_model, weight_range, num_particles, c1, c2, w, v_max)
+
+# Start timing
+start_time = time.time()
+# Training the quantized neural network with PSO optimizer
+for epoch in range(iterations):
+    best_fitness = quantized_pso_model.optimizer.step(train_data, train_labels_one_hot)
+    print(f"Iteration {epoch + 1}, Best Fitness: {best_fitness:.6f}")
+
+# End timing for PSO neural network training
+quantized_pso_training_time = time.time() - start_time
+print(f"Quantized PSO training time: {quantized_pso_training_time} seconds")
+
+# Evaluate on test set
+predictions = quantized_pso_model.forward(test_data)
+test_loss = quantized_pso_model.calculate_loss(predictions, test_labels_one_hot)
+print(f"Test Loss: {test_loss}")
+
+# Convert predictions to class labels
+predicted_labels = np.argmax(predictions, axis=1)
+accuracy = np.mean(predicted_labels == test_labels) * 100
+print(f"Test Accuracy: {accuracy}%")
 
 
 

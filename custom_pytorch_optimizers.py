@@ -2,6 +2,7 @@ import torch
 from torch.optim.optimizer import Optimizer
 import numpy as np
 import copy
+from numba import njit
 
 
 class GeneticAlgorithm(Optimizer):
@@ -110,17 +111,22 @@ class GeneticAlgorithm(Optimizer):
         return self.best_solution[0]
 
 class ParticleSwarm(Optimizer):
-    def __init__(self, model, weight_range=1300, num_particles=20, c1=2.0, c2=2.0, w=0.5):
+    def __init__(self, model, weight_range=1300, num_particles=20):
         self.params = [param for param in model.parameters()]
-        defaults = dict(num_particles=num_particles, c1=c1, c2=c2, w=w)
+        defaults = dict(weight_range=weight_range, num_particles=num_particles)
         super(ParticleSwarm, self).__init__(self.params, defaults)
 
         self.model = model
         self.weight_range = weight_range
         self.num_particles = num_particles
-        self.c1 = c1
-        self.c2 = c2
-        self.w = [w for param in model.parameters()]
+        self.c1 = None
+        self.c2 = None
+        self.w = None
+        # self.w = [w for param in model.parameters()]
+        self.v_max = 0.1
+        self.p_min = -weight_range / 2
+        self.p_max = weight_range / 2
+        self.diversity_factor = 0.1
         self.particles = self.generate_particles(self.params, self.num_particles, self.weight_range)
         self.global_best_position = None
         self.global_best_fitness = float('inf')
@@ -145,6 +151,13 @@ class ParticleSwarm(Optimizer):
             loss = self.model.criterion(outputs, y)
         return loss.item()
 
+    @staticmethod
+    @njit
+    def wrap(value, lower_bound, upper_bound):
+        range_size = upper_bound - lower_bound
+        value = np.mod(value - lower_bound, range_size) + lower_bound
+        return value
+
     def step(self, closure=None):
         if closure is not None:
             closure()
@@ -154,16 +167,19 @@ class ParticleSwarm(Optimizer):
         if self.global_best_position is None:  # Check if global_best_position is not initialized
             self.global_best_position = self._get_model_parameters()  # Initialize with the current model parameters
 
+
         for particle in self.particles:
             # Update velocity
             r1, r2 = np.random.rand(2)
             cognitive_velocity = [self.c1 * r1 * (bp - p) for bp, p in zip(particle.best_position, particle.position)]
             social_velocity = [self.c2 * r2 * (gbp - p) for gbp, p in zip(self.global_best_position, particle.position)]
-            particle.velocity = [w * v + cv + sv for w, v, cv, sv in
+            # Update and clip velocity
+            particle.velocity = [np.clip(w * v + cv + sv, -self.v_max, self.v_max) for w, v, cv, sv in
                                  zip(self.w, particle.velocity, cognitive_velocity, social_velocity)]
 
-            # Update position
-            particle.position = [p + v for p, v in zip(particle.position, particle.velocity)]
+            # Update and clip position
+            particle.position = [np.clip(p + v, self.p_min, self.p_max) for p, v in
+                                 zip(particle.position, particle.velocity)]
 
             self._set_model_parameters(particle.position)
 
@@ -179,6 +195,13 @@ class ParticleSwarm(Optimizer):
             if current_fitness < self.global_best_fitness:
                 self.global_best_fitness = current_fitness
                 self.global_best_position = particle.position.copy()
+
+                # Reinitialize particles for diversity if stagnation is detected
+                if np.random.rand() < self.diversity_factor:
+                    particle.position = [np.random.uniform(self.p_min, self.p_max, size=p.shape).astype(np.float32) for
+                                         p in particle.position]
+                    particle.velocity = [np.random.uniform(-self.v_max, self.v_max, size=v.shape).astype(np.float32) for
+                                         v in particle.velocity]
 
         # Print the best solution found
         # print("Best Position (Weights and Biases):", self.global_best_position)
