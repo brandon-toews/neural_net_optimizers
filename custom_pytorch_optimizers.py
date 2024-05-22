@@ -150,15 +150,20 @@ class ParticleSwarm(Optimizer):
             closure()
 
         X, y, _ = closure()
+
+        if self.global_best_position is None:  # Check if global_best_position is not initialized
+            self.global_best_position = self._get_model_parameters()  # Initialize with the current model parameters
+
         for particle in self.particles:
             # Update velocity
             r1, r2 = np.random.rand(2)
-            cognitive_velocity = self.c1 * r1 * (particle.best_position - particle.position)
-            social_velocity = self.c2 * r2 * (self.global_best_position - particle.position)
-            particle.velocity = self.w * particle.velocity + cognitive_velocity + social_velocity
+            cognitive_velocity = [self.c1 * r1 * (bp - p) for bp, p in zip(particle.best_position, particle.position)]
+            social_velocity = [self.c2 * r2 * (gbp - p) for gbp, p in zip(self.global_best_position, particle.position)]
+            particle.velocity = [w * v + cv + sv for w, v, cv, sv in
+                                 zip(self.w, particle.velocity, cognitive_velocity, social_velocity)]
 
             # Update position
-            particle.position += particle.velocity
+            particle.position = [p + v for p, v in zip(particle.position, particle.velocity)]
 
             self._set_model_parameters(particle.position)
 
@@ -176,8 +181,8 @@ class ParticleSwarm(Optimizer):
                 self.global_best_position = particle.position.copy()
 
         # Print the best solution found
-        print("Best Position (Weights and Biases):", self.global_best_position)
-        print("Best Fitness (Loss):", self.global_best_fitness)
+        # print("Best Position (Weights and Biases):", self.global_best_position)
+        # print("Best Fitness (Loss):", self.global_best_fitness)
 
         return self.global_best_fitness
 

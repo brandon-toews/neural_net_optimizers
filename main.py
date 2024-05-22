@@ -85,7 +85,7 @@ def main():
     pyt_nn.train_model(tensor_X, tensor_y, epochs)
     # End timing for normal neural network training
     pyt_nn_training_time = time.time() - start_time
-    print(f"Pytorch NN training time: {pyt_nn_training_time} seconds")
+    print(f"Pytorch Adam NN training time: {pyt_nn_training_time} seconds")
 
     # Test the model
     pyt_nn.eval()
@@ -113,7 +113,7 @@ def main():
     pyt_GA.train_model(tensor_X, tensor_y, generations, pop_size, mutation_rate, weight_range)
     # End timing for normal neural network training
     pyt_GA_training_time = time.time() - start_time
-    print(f"Pytorch NN training time: {pyt_GA_training_time} seconds")
+    print(f"Pytorch GA NN training time: {pyt_GA_training_time} seconds")
 
     # Test the model
     pyt_GA.eval()
@@ -131,9 +131,9 @@ def main():
     pyt_PSO = cust_py_nn.XOR_PSO_Model(input_size, hidden_size, output_size)
 
     # Define the optimizer
-    iterations = 100
+    iterations = 50
     weight_range = 1300
-    num_particles = 20
+    num_particles = 100
     c1 = 2.0
     c2 = 2.0
     w = 0.5
@@ -143,7 +143,7 @@ def main():
     pyt_PSO.train_model(tensor_X, tensor_y, iterations, weight_range, num_particles, c1, c2, w)
     # End timing for normal neural network training
     pyt_PSO_training_time = time.time() - start_time
-    print(f"Pytorch NN training time: {pyt_GA_training_time} seconds")
+    print(f"Pytorch PSO NN training time: {pyt_GA_training_time} seconds")
 
     # Test the model
     pyt_PSO.eval()

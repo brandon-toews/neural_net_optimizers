@@ -148,7 +148,7 @@ class XOR_PSO_Model(nn.Module):
                 return X, y, outputs
 
             best_fitness = optimizer.step(closure)
-            print(f"Generation {epoch + 1}, Best Fitness: {best_fitness}")
+            #print(f"Iteration {epoch + 1}, Best Fitness: {best_fitness:.20f}")
 
 
             if (epoch + 1) % 10 == 0:
