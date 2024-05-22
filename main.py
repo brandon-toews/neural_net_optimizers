@@ -93,7 +93,7 @@ def main():
         predictions = pyt_nn(tensor_X)
         print('Predictions:')
         print(predictions)
-        accuracy = pyt_nn.calculate_accuracy(predictions, tensor_y)
+        accuracy = cust_py_nn.xor_calculate_accuracy(predictions, tensor_y)
         print(f'Accuracy: {accuracy}')
         print('Rounded Predictions:')
         print(torch.round(predictions))
@@ -121,14 +121,42 @@ def main():
         predictions = pyt_GA(tensor_X)
         print('Predictions:')
         print(predictions)
-        accuracy = pyt_nn.calculate_accuracy(predictions, tensor_y)
+        accuracy = cust_py_nn.xor_calculate_accuracy(predictions, tensor_y)
         print(f'Accuracy: {accuracy}')
         print('Rounded Predictions:')
         print(torch.round(predictions))
 
     # pyt_nn.plot_metrics()
 
-    plot_comparison([pyt_nn, pyt_GA])
+    pyt_PSO = cust_py_nn.XOR_PSO_Model(input_size, hidden_size, output_size)
+
+    # Define the optimizer
+    iterations = 100
+    weight_range = 1300
+    num_particles = 20
+    c1 = 2.0
+    c2 = 2.0
+    w = 0.5
+
+    # Start timing
+    start_time = time.time()
+    pyt_PSO.train_model(tensor_X, tensor_y, iterations, weight_range, num_particles, c1, c2, w)
+    # End timing for normal neural network training
+    pyt_PSO_training_time = time.time() - start_time
+    print(f"Pytorch NN training time: {pyt_GA_training_time} seconds")
+
+    # Test the model
+    pyt_PSO.eval()
+    with torch.no_grad():
+        predictions = pyt_PSO(tensor_X)
+        print('Predictions:')
+        print(predictions)
+        accuracy = cust_py_nn.xor_calculate_accuracy(predictions, tensor_y)
+        print(f'Accuracy: {accuracy}')
+        print('Rounded Predictions:')
+        print(torch.round(predictions))
+
+    plot_comparison([pyt_nn, pyt_GA, pyt_PSO])
 
 
     # Define the quantized neural network

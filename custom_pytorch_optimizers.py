@@ -4,12 +4,12 @@ import numpy as np
 import copy
 
 
-class GeneticAlgorithmOptimizer(Optimizer):
+class GeneticAlgorithm(Optimizer):
     def __init__(self, model, population_size=20, mutation_rate=0.3, weight_range=40):
         self.params = [param for param in model.parameters()]
         defaults = dict(population_size=population_size, mutation_rate=mutation_rate,
                         weight_range=weight_range)
-        super(GeneticAlgorithmOptimizer, self).__init__(self.params, defaults)
+        super(GeneticAlgorithm, self).__init__(self.params, defaults)
 
         self.model = model
 
@@ -109,6 +109,85 @@ class GeneticAlgorithmOptimizer(Optimizer):
         self._set_model_parameters(self.best_solution[1])
         return self.best_solution[0]
 
+class ParticleSwarm(Optimizer):
+    def __init__(self, model, weight_range=1300, num_particles=20, c1=2.0, c2=2.0, w=0.5):
+        self.params = [param for param in model.parameters()]
+        defaults = dict(num_particles=num_particles, c1=c1, c2=c2, w=w)
+        super(ParticleSwarm, self).__init__(self.params, defaults)
+
+        self.model = model
+        self.weight_range = weight_range
+        self.num_particles = num_particles
+        self.c1 = c1
+        self.c2 = c2
+        self.w = [w for param in model.parameters()]
+        self.particles = self.generate_particles(self.params, self.num_particles, self.weight_range)
+        self.global_best_position = None
+        self.global_best_fitness = float('inf')
+
+    def _get_model_parameters(self):
+        return [param.data.clone().detach().cpu().numpy() for param in self.model.parameters()]
+
+    def _set_model_parameters(self, individual):
+        for param, individual_param in zip(self.model.parameters(), individual):
+            param.data = torch.tensor(individual_param, dtype=param.data.dtype, device=param.data.device)
+
+    def generate_particles(self, params, num_particles, weight_range):
+        particles = []
+        for i in range(num_particles):
+            new_particle = Particle(params, weight_range)
+            particles.append(new_particle)
+        return particles
+
+    def objective_function(self, X, y):
+        with torch.no_grad():
+            outputs = self.model(X)
+            loss = self.model.criterion(outputs, y)
+        return loss.item()
+
+    def step(self, closure=None):
+        if closure is not None:
+            closure()
+
+        X, y, _ = closure()
+        for particle in self.particles:
+            # Update velocity
+            r1, r2 = np.random.rand(2)
+            cognitive_velocity = self.c1 * r1 * (particle.best_position - particle.position)
+            social_velocity = self.c2 * r2 * (self.global_best_position - particle.position)
+            particle.velocity = self.w * particle.velocity + cognitive_velocity + social_velocity
+
+            # Update position
+            particle.position += particle.velocity
+
+            self._set_model_parameters(particle.position)
+
+            # Evaluate fitness
+            current_fitness = self.objective_function(X, y)
+
+            # Update personal best
+            if current_fitness < particle.best_fitness:
+                particle.best_fitness = current_fitness
+                particle.best_position = particle.position.copy()
+
+            # Update global best
+            if current_fitness < self.global_best_fitness:
+                self.global_best_fitness = current_fitness
+                self.global_best_position = particle.position.copy()
+
+        # Print the best solution found
+        print("Best Position (Weights and Biases):", self.global_best_position)
+        print("Best Fitness (Loss):", self.global_best_fitness)
+
+        return self.global_best_fitness
 
 
+class Particle:
+    def __init__(self, params, weight_range):
+        low = -weight_range / 2
+        high = weight_range / 2
+        self.position = [np.random.uniform(low, high, size=param.size()).astype(np.float32) for param in params]
+        self.velocity = [np.random.uniform(low, high, size=param.size()).astype(np.float32) for param in params]
+        self.best_position = self.position.copy()
+        self.best_fitness = float('inf')
 

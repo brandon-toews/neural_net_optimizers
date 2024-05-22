@@ -40,7 +40,7 @@ pyt_nn_training_time = time.time() - start_time
 print(f"Pytorch Adam training time: {pyt_nn_training_time} seconds")
 accuracy = model.evaluate_model(test_loader)
 print(f'Standard PyTorch Model Accuracy: {accuracy}%')
-model.plot_metrics()'''
+cust_py_nn.plot_metrics(model)'''
 
 # Define the parameters for the genetic algorithm optimizer
 population_size = 5
@@ -58,7 +58,7 @@ pyt_nn_training_time = time.time() - start_time
 print(f"Pytorch GA training time: {pyt_nn_training_time} seconds")
 accuracy = ga_pytorch_model.evaluate_model(test_loader)
 print(f'Genetic Algorithm PyTorch Model Accuracy: {accuracy}%')
-ga_pytorch_model.plot_metrics()
+cust_py_nn.plot_metrics(ga_pytorch_model)
 
 
 # Convert data loaders to numpy arrays
@@ -94,7 +94,7 @@ test_labels_one_hot = np.eye(10)[test_labels]
 
 # Define the parameters for the genetic algorithm optimizer
 population_size = 20
-mutation_rate = 0.1
+mutation_rate = 0.03
 weight_range = 60000
 
 # Initialize quantized neural network with genetic algorithm optimizer
