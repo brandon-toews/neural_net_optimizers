@@ -63,13 +63,13 @@ accuracy = cust_py_nn.evaluate_model(ga_pytorch_model, test_loader)
 print(f'Genetic Algorithm PyTorch Model Accuracy: {accuracy}%')
 cust_py_nn.plot_metrics(ga_pytorch_model)'''
 
-'''# Define the optimizer
+# Define the optimizer
 iterations = 20
 weight_range = 1
 num_particles = 20
-c1 = (2, 0.5)
-c2 = (0.5, 2)
-w = (0.9, 0.4)
+c1 = (1, 0.5)
+c2 = (0.5, 1)
+w = (0.7, 0.3)
 decay_rate = 0.01
 
 # Initialize the PyTorch model with the genetic algorithm optimizer
@@ -86,7 +86,7 @@ pyt_nn_training_time = time.time() - start_time
 print(f"Pytorch PSO training time: {pyt_nn_training_time} seconds")
 accuracy = cust_py_nn.evaluate_model(compiled_pso, test_loader)
 print(f'Particle Swarm PyTorch Model Accuracy: {accuracy}%')
-cust_py_nn.plot_metrics(compiled_pso)'''
+cust_py_nn.plot_metrics(compiled_pso)
 
 
 # Convert data loaders to numpy arrays

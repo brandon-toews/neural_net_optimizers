@@ -131,16 +131,17 @@ def main():
     pyt_PSO = cust_py_nn.XOR_PSO_Model(input_size, hidden_size, output_size)
 
     # Define the optimizer
-    iterations = 50
-    weight_range = 1800
+    iterations = 20
+    weight_range = 10
     num_particles = 20
-    c1 = 2.0
-    c2 = 2.0
-    w = 0.4
+    c1 = (2.0, 0.5)
+    c2 = (0.5, 2)
+    w = (0.5, 0.3)
+    decay_rate = 0.01
 
     # Start timing
     start_time = time.time()
-    pyt_PSO.train_model(tensor_X, tensor_y, iterations, weight_range, num_particles, c1, c2, w)
+    pyt_PSO.train_model(tensor_X, tensor_y, iterations, weight_range, num_particles, c1, c2, w, decay_rate)
     # End timing for normal neural network training
     pyt_PSO_training_time = time.time() - start_time
     print(f"Pytorch PSO NN training time: {pyt_PSO_training_time} seconds")
@@ -159,7 +160,7 @@ def main():
     plot_comparison([pyt_nn, pyt_GA, pyt_PSO])
 
 
-    # Define the quantized neural network
+    '''# Define the quantized neural network
     input_size = 2
     hidden_size = 20
     output_size = 1
@@ -209,7 +210,7 @@ def main():
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend()
-    plt.show()
+    plt.show()'''
 
 
 # Press the green button in the gutter to run the script.

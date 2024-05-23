@@ -152,10 +152,24 @@ class XOR_PSO_Model(nn.Module):
         x = self.sigmoid(self.layer2(x))
         return x
 
-    def train_model(self, X, y, epochs=100, weight_range=1300, num_particles=20, c1=2.0, c2=2.0, w=0.5):
-        optimizer = cust_optims.ParticleSwarm(self, weight_range, num_particles, c1, c2, w)
+    def train_model(self, X, y, epochs=20, weight_range=10, num_particles=20, c1=(2, 0.5), c2=(0.5, 2), w=(0.5, 0.3), decay_rate=0.01):
+        self.train()
+        print('Training the model ...')
+        optimizer = cust_optims.ParticleSwarm(self, weight_range, num_particles)
+        optimizer.c1 = c1
+        optimizer.c2 = c2
+        optimizer.w = [w for param in self.parameters()]
 
         for epoch in range(epochs):
+            inertia = w[1] + (w[0] - w[1]) * np.exp(-decay_rate * epoch)
+            optimizer.w = [inertia for param in self.parameters()]
+
+            # Adapt cognitive and social coefficients
+            cog_coef = c1[0] - (c1[0] - c1[1]) * (epoch / epochs)
+            social_coef = c2[0] + (c2[1] - c2[0]) * (epoch / epochs)
+            optimizer.c1 = cog_coef
+            optimizer.c2 = social_coef
+
             def closure():
                 # optimizer.zero_grad()
                 outputs = self(X)
@@ -287,7 +301,7 @@ class Mnist_PSO_Model(nn.Module):
         self.w = w
         self.decay_rate = decay_rate
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = cust_optims.ParticleSwarm(self, weight_range, num_particles)
+        self.optimizer = cust_optims.ParticleSwarm(self, weight_range, num_particles, True)
 
     def forward(self, x):
         x = x.view(-1, 28 * 28)
@@ -322,6 +336,7 @@ class Mnist_PSO_Model(nn.Module):
                     #self.train_accuracies.append(accuracy)
                     return inputs, labels, outputs
 
+                best_fitness = self.optimizer.step(closure)
                 _, _, outputs = closure()
                 # print(f"Outputs shape: {outputs.shape}")  # Expected: [batch_size, num_classes]
                 # print(f"Labels shape: {labels.shape}")  # Expected: [batch_size]
@@ -331,7 +346,7 @@ class Mnist_PSO_Model(nn.Module):
                 running_accuracy += accuracy
                 total_samples += 1
 
-                best_fitness = self.optimizer.step(closure)
+
             avg_loss = running_loss / total_samples
             avg_accuracy = running_accuracy / total_samples
             self.train_losses.append(avg_loss/len(train_loader))
