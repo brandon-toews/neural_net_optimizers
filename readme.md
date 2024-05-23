@@ -91,6 +91,8 @@ Results are visualized using Matplotlib to compare the training loss and accurac
   ![Mnist PyTorch with Adam Results](mnist_pytorch_adam.png)
 - **Genetic Algorithm**:
   ![Mnist GA Results](mnist_pytorch_ga.png)
+- **Particle Swarm Optimization**:
+  ![Mnist PSO Results](mnist_pytorch_pso.png)
 
 ## Installation
 

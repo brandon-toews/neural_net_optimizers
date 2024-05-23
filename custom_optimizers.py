@@ -2,8 +2,18 @@ import numpy as np
 import copy
 from numba import njit
 
+
 class GeneticAlgorithm:
     def __init__(self, neural_net, population_size=20, mutation_rate=0.3, weight_range=40):
+        """
+        Initialize the genetic algorithm optimizer.
+
+        Parameters:
+        neural_net: Neural network to optimize.
+        population_size (int): Number of individuals in the population.
+        mutation_rate (float): Probability of mutation.
+        weight_range (int): Range of initial weights.
+        """
         self.nn = neural_net
         self.population_size = population_size
         self.mutation_rate = mutation_rate
@@ -18,17 +28,42 @@ class GeneticAlgorithm:
 
     @staticmethod
     def generate_population(initial_individual, population_size, data_type, weight_range=2):
-        low = int(np.iinfo(data_type).min * 0.66) # -self.nn.data_type(weight_range / 2)
-        high = int(np.iinfo(data_type).max * 0.66) # self.nn.data_type(weight_range / 2)
+        """
+        Generate an initial population with random weights.
+
+        Parameters:
+        initial_individual (np.ndarray): Initial set of parameters.
+        population_size (int): Number of individuals in the population.
+        data_type (type): Data type for the parameters.
+        weight_range (int): Range for random weights.
+
+        Returns:
+        list: Generated population.
+        """
+        low = int(np.iinfo(data_type).min * 0.66)
+        high = int(np.iinfo(data_type).max * 0.66)
         population = []
         for _ in range(population_size):
             # Create a new individual by adding random noise to the initial individual
-            new_individual = initial_individual + np.random.randint(low, high, initial_individual.shape).astype(data_type)
+            new_individual = initial_individual + np.random.randint(low, high, initial_individual.shape).astype(
+                data_type)
             population.append(new_individual)
         return population
 
     @staticmethod
     def neuron_crossover(parent1, parent2, weight_shapes, bias_shapes):
+        """
+        Perform neuron-level crossover between two parents to produce two children.
+
+        Parameters:
+        parent1 (np.ndarray): Parameters of the first parent.
+        parent2 (np.ndarray): Parameters of the second parent.
+        weight_shapes (list): List of weight shapes.
+        bias_shapes (list): List of bias shapes.
+
+        Returns:
+        tuple: Two children resulting from crossover.
+        """
         child1 = np.copy(parent1)
         child2 = np.copy(parent2)
 
@@ -38,7 +73,7 @@ class GeneticAlgorithm:
             w_size = np.prod(w_shape)
             b_size = np.prod(b_shape)
 
-            # For each neuron in the layer, swap weights and biases
+            # Swap weights and biases for each neuron
             for i in range(num_neurons):
                 if np.random.rand() < 0.5:
                     # Swap weights
@@ -58,6 +93,18 @@ class GeneticAlgorithm:
 
     @staticmethod
     def layer_crossover(parent1, parent2, weight_shapes, bias_shapes):
+        """
+        Perform layer-level crossover between two parents to produce two children.
+
+        Parameters:
+        parent1 (np.ndarray): Parameters of the first parent.
+        parent2 (np.ndarray): Parameters of the second parent.
+        weight_shapes (list): List of weight shapes.
+        bias_shapes (list): List of bias shapes.
+
+        Returns:
+        tuple: Two children resulting from crossover.
+        """
         child1 = np.copy(parent1)
         child2 = np.copy(parent2)
 
@@ -82,15 +129,35 @@ class GeneticAlgorithm:
 
     @staticmethod
     def crossover(parent1, parent2):
+        """
+        Perform element-wise crossover between two parents to produce two children.
+
+        Parameters:
+        parent1 (np.ndarray): Parameters of the first parent.
+        parent2 (np.ndarray): Parameters of the second parent.
+
+        Returns:
+        tuple: Two children resulting from crossover.
+        """
         crossover_mask = np.random.rand(parent1.shape[0]) < 0.5
         child1, child2 = np.copy(parent1), np.copy(parent2)
         child1[crossover_mask] = parent2[crossover_mask]
         child2[crossover_mask] = parent1[crossover_mask]
         return child1, child2
 
-
     @staticmethod
     def mutate(individual, mutation_rate, data_type):
+        """
+        Mutate an individual by altering its parameters with a given probability.
+
+        Parameters:
+        individual (np.ndarray): Individual to mutate.
+        mutation_rate (float): Probability of mutation.
+        data_type (type): Data type for the parameters.
+
+        Returns:
+        np.ndarray: Mutated individual.
+        """
         if np.random.rand() < mutation_rate:
             min_delta = np.iinfo(data_type).min
             max_delta = np.iinfo(data_type).max
@@ -100,16 +167,11 @@ class GeneticAlgorithm:
             biases = individual[half_size:]
 
             # Mutate weights
-            # mutation_mask_weights = np.random.rand(weights.shape[0]) < 0.5
             delta_weights = np.random.randint(min_delta, max_delta, weights.shape).astype(data_type)
-            #weights[mutation_mask_weights] += delta_weights[mutation_mask_weights]
             weights += delta_weights
 
-
             # Mutate biases
-            # mutation_mask_biases = np.random.rand(biases.shape[0]) < 0.5
             delta_biases = np.random.randint(-1, 2, biases.shape).astype(data_type)
-            # biases[mutation_mask_biases] += delta_biases[mutation_mask_biases]
             biases += delta_biases
             np.clip(biases, -5, 5, out=biases)
 
@@ -121,67 +183,91 @@ class GeneticAlgorithm:
             return individual
 
     def fitness_function(self, X, y):
+        """
+        Compute the fitness of the neural network.
+
+        Parameters:
+        X (np.ndarray): Input data.
+        y (np.ndarray): True labels.
+
+        Returns:
+        float: Fitness score.
+        """
         predictions = self.nn.forward(X)
         return self.loss_function[self.criterion](predictions, y)
-        # criterion = tnn.MSELoss()
-        # loss = criterion(predictions, y)
-
 
     def MSE(self, predictions, y):
+        """
+        Compute Mean Squared Error.
+
+        Parameters:
+        predictions (np.ndarray): Predicted values.
+        y (np.ndarray): True values.
+
+        Returns:
+        float: Computed MSE.
+        """
         error = np.mean((predictions - y) ** 2)
         self.nn.train_losses.append(error)
         return 1 / (error + 1)
 
     @staticmethod
     def CrossEntropy(predictions, y):
-        # loss = self.nn.calculate_loss(predictions, y)
+        """
+        Compute Cross Entropy loss.
+
+        Parameters:
+        predictions (np.ndarray): Predicted values.
+        y (np.ndarray): True values.
+
+        Returns:
+        float: Computed Cross Entropy loss.
+        """
         epsilon = 1e-7
         loss = -np.sum(y * np.log(predictions + epsilon)) / y.shape[0]
-        #return loss
         return 1 / (loss + 1)
 
-
-
-    # Function to train the neural network using genetic algorithm
     def train(self, X, y, generations=50):
+        """
+        Train the neural network using the genetic algorithm.
+
+        Parameters:
+        X (np.ndarray): Training data.
+        y (np.ndarray): Training labels.
+        generations (int): Number of generations to train.
+
+        Returns:
+        list: Training progress over generations.
+        """
         training_progress = []
-        # Initialize the best solution found so far
         best_solution = (-np.inf, None)
         weight_shapes = [w.shape for w in self.nn.weights]
         bias_shapes = [b.shape for b in self.nn.biases]
-        # Train the neural network
+
         for generation in range(generations):
-            # Evaluate fitness of each individual
             fitness_scores = []
+
             # Evaluate fitness of each individual
             for individual in self.population:
-                # Set the parameters of the neural network to the individual's weights and biases
                 self.nn.set_parameters(individual)
-                # Calculate the fitness score of the individual
                 score = self.fitness_function(X, y)
-                # Update the best solution found so far
                 if score > best_solution[0]:
                     best_solution = (score, copy.deepcopy(individual))
-                # Append the fitness score to the list of fitness scores
                 fitness_scores.append(score)
 
-            # Sort indices based on fitness_scores in descending order
+            # Sort the population by fitness scores in descending order
             sorted_indices = sorted(range(len(fitness_scores)), key=lambda i: fitness_scores[i], reverse=True)
-
-            # Reorder population based on sorted indices
             sorted_population = [self.population[i] for i in sorted_indices]
-            # Select top 50% of the population
+
+            # Select the top 50% of the population
             self.population = sorted_population[:self.population_size // 2]
 
-            # Create next generation
             new_population = []
 
             # Perform crossover and mutation to create new individuals
             while len(new_population) < self.population_size:
-                # Select two parents randomly from the top population
                 parent1, parent2 = (self.population[np.random.randint(len(self.population))],
                                     self.population[np.random.randint(len(self.population))])
-                # Perform crossover to create two children
                 child1, child2 = self.neuron_crossover(parent1, parent2, weight_shapes, bias_shapes)
                 new_population.append(self.mutate(child1, self.mutation_rate, self.nn.data_type))
                 new_population.append(self.mutate(child2, self.mutation_rate, self.nn.data_type))
@@ -191,15 +277,12 @@ class GeneticAlgorithm:
             training_progress.append(best_fitness)
             print(f"Generation {generation + 1}, Best Fitness: {best_fitness}")
 
-        # Test the best individual
+        # Set the parameters of the neural network to the best solution found
         self.nn.set_parameters(best_solution[1])
         predictions = self.nn.forward(X)
-        # Adjust numpy print options
         np.set_printoptions(precision=4, suppress=True)
-        # Print the predictions
         print("Predictions after genetic optimization:")
         print(predictions)
-        # Print the accuracy of the best solution
         print(f'Accuracy: {best_solution[0]}')
 
         return training_progress
@@ -207,6 +290,18 @@ class GeneticAlgorithm:
 
 class ParticleSwarm:
     def __init__(self, neural_net, weight_range=1300, num_particles=20, c1=2.0, c2=2.0, w=0.5, v_max=0.1):
+        """
+        Initialize the particle swarm optimizer.
+
+        Parameters:
+        neural_net: Neural network to optimize.
+        weight_range (int): Range for initial particle weights.
+        num_particles (int): Number of particles in the swarm.
+        c1 (float): Cognitive coefficient.
+        c2 (float): Social coefficient.
+        w (float): Inertia coefficient.
+        v_max (float): Maximum velocity.
+        """
         self.nn = neural_net
         self.weight_range = weight_range
         self.num_particles = num_particles
@@ -221,49 +316,98 @@ class ParticleSwarm:
         self.global_best_fitness = float('inf')
 
     def generate_particles(self, num_particles, weight_range):
+        """
+        Generate an initial swarm of particles.
+
+        Parameters:
+        num_particles (int): Number of particles in the swarm.
+        weight_range (int): Range for initial particle weights.
+
+        Returns:
+        list: Generated particles.
+        """
         particles = []
         for i in range(num_particles):
-            new_particle = Particle(self.nn.get_parameters(), weight_range, self.p_min, self.p_max, self.v_max, self.nn.data_type)
+            new_particle = Particle(self.nn.get_parameters(), weight_range, self.p_min, self.p_max, self.v_max,
+                                    self.nn.data_type)
             particles.append(new_particle)
         return particles
 
     def fitness_function(self, X, y):
+        """
+        Compute the fitness of the neural network.
+
+        Parameters:
+        X (np.ndarray): Input data.
+        y (np.ndarray): True labels.
+
+        Returns:
+        float: Fitness score.
+        """
         predictions = self.nn.forward(X)
         return self.nn.calculate_loss(predictions, y)
 
     def step(self, X, y):
+        """
+        Perform one iteration of the particle swarm optimization.
+
+        Parameters:
+        X (np.ndarray): Input data.
+        y (np.ndarray): True labels.
+
+        Returns:
+        float: Global best fitness.
+        """
         if self.global_best_position is None:
             self.global_best_position = self.nn.get_parameters()
 
         for particle in self.particles:
+            # Update particle velocity
             r1, r2 = np.random.rand(2)
             cognitive_velocity = self.c1 * r1 * (particle.best_position - particle.position)
             social_velocity = self.c2 * r2 * (self.global_best_position - particle.position)
+            particle.velocity = self.w * particle.velocity + cognitive_velocity + social_velocity
 
-            # Update and clip velocity
-            particle.velocity = particle.velocity + cognitive_velocity + social_velocity
+            # Clip velocity to maximum velocity
+            particle.velocity = np.clip(particle.velocity, -self.v_max, self.v_max)
 
-            # Update and clip position
-            particle.position = particle.position + particle.velocity
+            # Update particle position
+            particle.position += particle.velocity
 
+            # Clip position to the allowed range
+            particle.position = np.clip(particle.position, self.p_min, self.p_max)
+
+            # Evaluate fitness
             self.nn.set_parameters(particle.position)
-            current_fitness = self.fitness_function(X, y)
+            fitness = self.fitness_function(X, y)
 
-            if current_fitness < particle.best_fitness:
-                particle.best_fitness = current_fitness
-                particle.best_position = copy.deepcopy(particle.position)
+            # Update personal best
+            if fitness < particle.best_fitness:
+                particle.best_fitness = fitness
+                particle.best_position = np.copy(particle.position)
 
-            if current_fitness < self.global_best_fitness:
-                self.global_best_fitness = current_fitness
-                self.global_best_position = copy.deepcopy(particle.position)
+            # Update global best
+            if fitness < self.global_best_fitness:
+                self.global_best_fitness = fitness
+                self.global_best_position = np.copy(particle.position)
 
-        self.nn.set_parameters(self.global_best_position)
         return self.global_best_fitness
 
 
 class Particle:
     def __init__(self, initial_position, weight_range, p_min, p_max, v_max, data_type):
+        """
+        Initialize a particle.
+
+        Parameters:
+        initial_position (np.ndarray): Initial position of the particle.
+        weight_range (int): Range for particle weights.
+        p_min (float): Minimum position value.
+        p_max (float): Maximum position value.
+        v_max (float): Maximum velocity.
+        data_type (type): Data type for the parameters.
+        """
         self.position = np.random.uniform(p_min, p_max, initial_position.shape).astype(data_type)
         self.velocity = np.random.uniform(-v_max, v_max, initial_position.shape).astype(data_type)
-        self.best_position = copy.deepcopy(self.position)
+        self.best_position = np.copy(self.position)
         self.best_fitness = float('inf')

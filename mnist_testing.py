@@ -37,7 +37,7 @@ model = cust_py_nn.Mnist_Model()
 # Start timing
 start_time = time.time()
 # Training the standard PyTorch model with Adam optimizer
-model.train_model(train_loader, 5)
+model.train_model(train_loader, 1)
 # End timing for normal neural network training
 pyt_nn_training_time = time.time() - start_time
 print(f"Pytorch Adam training time: {pyt_nn_training_time} seconds")
@@ -55,7 +55,7 @@ ga_pytorch_model = cust_py_nn.Mnist_GA_Model(population_size, mutation_rate, wei
 # Start timing
 start_time = time.time()
 # Training the pytorch model with genetic algorithm optimizer
-ga_pytorch_model.train_model(train_loader, 8)
+ga_pytorch_model.train_model(train_loader, 1)
 # End timing for GA neural network training
 pyt_nn_training_time = time.time() - start_time
 print(f"Pytorch GA training time: {pyt_nn_training_time} seconds")
@@ -64,7 +64,7 @@ print(f'Genetic Algorithm PyTorch Model Accuracy: {accuracy}%')
 cust_py_nn.plot_metrics(ga_pytorch_model)
 
 # Define the optimizer
-iterations = 8
+iterations = 1
 weight_range = 2
 num_particles = 20
 c1 = (2.0, 0.5)
@@ -135,7 +135,7 @@ quantized_ga_model.optimizer = cust_optims.GeneticAlgorithm(quantized_ga_model, 
 # Start timing
 start_time = time.time()
 # Training the quantized neural network with genetic algorithm optimizer
-quantized_ga_model.fit(train_data, train_labels_one_hot, 8)
+quantized_ga_model.fit(train_data, train_labels_one_hot, 1)
 # End timing for GA neural network training
 quantized_ga_training_time = time.time() - start_time
 print(f"Quantized GA training time: {quantized_ga_training_time} seconds")
@@ -152,7 +152,7 @@ print(f"Test Accuracy: {accuracy}%")
 
 
 # Define the optimizer parameters
-iterations = 8
+iterations = 1
 weight_range = 1
 num_particles = 20
 c1 = 2.0
