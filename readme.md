@@ -83,6 +83,14 @@ Contains custom implementations of Genetic Algorithm and Particle Swarm Optimiza
 ## Results 📊
 
 Results are visualized using Matplotlib to compare the training loss and accuracy of each model over epochs. The performance of different optimization algorithms is compared in terms of training time, final loss, and accuracy.
+### XOR Problem
+![XOR PyTorch Results](XOR_Models.png)
+![XOR Normal vs Quantized GA Results](XORNormalvsQuantGA.png)
+### MNIST Dataset
+- **Adam**:
+  ![Mnist PyTorch with Adam Results](mnist_pytorch_adam.png)
+- **Genetic Algorithm**:
+  ![Mnist GA Results](mnist_pytorch_ga.png)
 
 ## Installation
 
