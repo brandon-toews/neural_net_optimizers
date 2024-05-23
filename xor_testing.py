@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-
 import neural_network as cust_nn
 import quantized_nn as qnn
 import custom_optimizers as cust_optims
@@ -9,18 +8,21 @@ import matplotlib.pyplot as plt
 import time
 
 
-# Plot comparison
 def plot_comparison(models):
+    """
+    Plot training loss and accuracy comparison for multiple models.
+
+    Parameters:
+    models (list): List of models to compare.
+    """
     plt.figure(figsize=(12, 5))
 
     for i, model in enumerate(models):
         epochs = range(1, len(model.train_losses) + 1)
 
-        # Plot training loss
         plt.subplot(1, 2, 1)
         plt.plot(epochs, model.train_losses, label=f'{model.name} Training Loss')
 
-        # Plot training accuracy
         plt.subplot(1, 2, 2)
         plt.plot(epochs, model.train_accuracies, label=f'{model.name} Training Accuracy')
 
@@ -39,6 +41,7 @@ def plot_comparison(models):
     plt.tight_layout()
     plt.show()
 
+
 def main():
     # Input data (4 samples, 2 features each)
     X = np.array([[0, 0],
@@ -53,27 +56,7 @@ def main():
     input_size = 2
     hidden_size = 5
     output_size = 1
-    normal_nn = cust_nn.NeuralNetwork(input_size, hidden_size, output_size)
-
-    # Train the neural network
     epochs = 500
-    learning_rate = 20
-
-    # Start timing
-    start_time = time.time()
-    normal_nn_history = normal_nn.train(X, y, epochs, learning_rate)
-
-    # End timing for normal neural network training
-    normal_nn_training_time = time.time() - start_time
-    print(f"Normal NN training time: {normal_nn_training_time} seconds")
-
-    # Adjust numpy print options
-    np.set_printoptions(precision=4, suppress=True)
-
-    # Test the neural network
-    output = normal_nn.forward(X)
-    print("Predicted output:")
-    print(output)
 
     # Tensorize the input and output data
     tensor_X = torch.tensor(X, dtype=torch.float32)
@@ -98,8 +81,6 @@ def main():
         print('Rounded Predictions:')
         print(torch.round(predictions))
 
-    # pyt_nn.plot_metrics()
-
     pyt_GA = cust_py_nn.XOR_GA_Model(input_size, hidden_size, output_size)
 
     # Define the optimizer
@@ -113,6 +94,7 @@ def main():
     pyt_GA.train_model(tensor_X, tensor_y, generations, pop_size, mutation_rate, weight_range)
     # End timing for normal neural network training
     pyt_GA_training_time = time.time() - start_time
+    time
     print(f"Pytorch GA NN training time: {pyt_GA_training_time} seconds")
 
     # Test the model
@@ -125,8 +107,6 @@ def main():
         print(f'Accuracy: {accuracy}')
         print('Rounded Predictions:')
         print(torch.round(predictions))
-
-    # pyt_nn.plot_metrics()
 
     pyt_PSO = cust_py_nn.XOR_PSO_Model(input_size, hidden_size, output_size)
 
@@ -144,6 +124,7 @@ def main():
     pyt_PSO.train_model(tensor_X, tensor_y, iterations, weight_range, num_particles, c1, c2, w, decay_rate)
     # End timing for normal neural network training
     pyt_PSO_training_time = time.time() - start_time
+    time
     print(f"Pytorch PSO NN training time: {pyt_PSO_training_time} seconds")
 
     # Test the model
@@ -159,8 +140,29 @@ def main():
 
     plot_comparison([pyt_nn, pyt_GA, pyt_PSO])
 
+    normal_nn = cust_nn.NeuralNetwork(input_size, hidden_size, output_size)
 
-    '''# Define the quantized neural network
+    # Train the neural network
+    epochs = 500
+    learning_rate = 20
+
+    # Start timing
+    start_time = time.time()
+    normal_nn_history = normal_nn.train(X, y, epochs, learning_rate)
+
+    # End timing for normal neural network training
+    normal_nn_training_time = time.time() - start_time
+    print(f"Normal NN training time: {normal_nn_training_time} seconds")
+
+    # Adjust numpy print options
+    np.set_printoptions(precision=4, suppress=True)
+
+    # Test the neural network
+    output = normal_nn.forward(X)
+    print("Predicted output:")
+    print(output)
+
+    # Define the quantized neural network
     input_size = 2
     hidden_size = 20
     output_size = 1
@@ -210,10 +212,9 @@ def main():
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend()
-    plt.show()'''
+    plt.show()
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     main()
 

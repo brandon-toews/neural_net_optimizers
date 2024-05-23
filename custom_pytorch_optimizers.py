@@ -317,20 +317,19 @@ class ParticleSwarm(Optimizer):
         return particles
 
     # Objective function
-    def objective_function(self, outputs, y):
+    def objective_function(self, X, y):
         """ Objective function for the particle swarm
         Args:
             X (Tensor): Input data
             y (Tensor): Target data
         Returns:
             Loss (float): Loss for the model """
-        # Calculate the loss
-        loss = self.model.criterion(outputs, y)
-        '''# No gradient computation is needed
+        # No gradient computation is needed
         with torch.no_grad():
             # Feed the input data to the model
-            outputs = self.model(X)'''
-
+            outputs = self.model(X)
+            # Calculate the loss
+            loss = self.model.criterion(outputs, y)
         # Return the loss
         return loss.item()
 
@@ -368,15 +367,13 @@ class ParticleSwarm(Optimizer):
             closure (callable): A closure that reevaluates the model and returns the loss
         Returns:
             Best solution fitness score (float) """
-        # If closure is not provided, raise an error
-        if closure is None:
-            raise ValueError("Closure is required for PSO step")
-
-
-
+        # If closure is provided, reevaluate the model
+        if closure is not None:
+            closure()
+        # Get the input data and target data from the closure
+        X, y, _ = closure()
         # Loop through the particles
         for particle in self.particles:
-
             # Get random numbers to
             r1, r2 = np.random.rand(2)
             # Calculate cognitive and social velocities
@@ -387,10 +384,8 @@ class ParticleSwarm(Optimizer):
             self.move_particle[self.clip](particle, cognitive_velocity, social_velocity)
             # Set the model parameters to the particle position
             self._set_model_parameters(particle.position)
-            # Get the input data and target data from the closure
-            X, y, outputs = closure()
             # Evaluate fitness
-            current_fitness = self.objective_function(outputs, y)
+            current_fitness = self.objective_function(X, y)
             # Update personal best
             if current_fitness < particle.best_fitness:
                 particle.best_fitness = current_fitness
@@ -420,10 +415,8 @@ class Particle:
         # Initialize the particle with random position and velocity within the weight range
         low = -weight_range / 2
         high = weight_range / 2
-        # Initialize the position and velocity withing the weight range
         self.position = [np.random.uniform(low, high, size=param.size()).astype(np.float32) for param in params]
         self.velocity = [np.random.uniform(low, high, size=param.size()).astype(np.float32) for param in params]
-        # Initialize the personal best position and fitness
         self.best_position = self.position.copy()
         self.best_fitness = float('inf')
 

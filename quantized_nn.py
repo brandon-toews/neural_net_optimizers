@@ -1,27 +1,29 @@
 import numpy as np
 from numba import njit
 
-# Define a custom neural network class to create a quantized neural network
+
 class Quantized_NN:
     def __init__(self, input_size, output_size, data_type=np.int8, criterion='MSE'):
-        # Initialize the input and output size
+        """
+        Initialize a quantized neural network.
+
+        Parameters:
+        input_size (int): Number of input neurons.
+        output_size (int): Number of output neurons.
+        data_type (type): Data type for weights and biases (default: np.int8).
+        criterion (str): Loss function to be used ('MSE' or 'CrossEntropy').
+        """
         self.input_size = input_size
         self.output_size = output_size
         self.data_type = data_type
-        # Initialize the layers, weights, and biases
         self.layers = []
         self.weights = []
         self.biases = []
-
         self.train_losses = []
         self.train_accuracies = []
-
-        # Initialize the optimizer
         self.optimizer = None
-
         self.criterion = criterion
 
-        # Dictionary of activation functions
         self.activation_function = {
             'sigmoid': self.sigmoid,
             'relu': self.relu,
@@ -35,67 +37,88 @@ class Quantized_NN:
             'batch_norm': self.batch_norm
         }
 
-
-    # Add a hidden layer to the neural network
     def add_hidden_layer(self, layer_type, neuron_size):
-        # Append the activation function to the layers list
-        self.layers.append(self.activation_function[layer_type])
-        # If there are no weights, initialize the weights for the input layer
-        if not self.weights:
-            # Initialize the weights for the input layer
-            self.weights.append(np.zeros((self.input_size, neuron_size), self.data_type))
-        # If there are weights, initialize the weights for the next layer
-        else:
-            # Get the size of the next layer's input
-            next_layers_input_size = self.weights[-1].shape[1]
-            # Initialize the weights for the next layer
-            self.weights.append(np.zeros((next_layers_input_size, neuron_size), self.data_type))
+        """
+        Add a hidden layer to the neural network.
 
-        # Initialize the biases for the layer based on the neuron size
+        Parameters:
+        layer_type (str): Type of activation function for the layer.
+        neuron_size (int): Number of neurons in the hidden layer.
+        """
+        self.layers.append(self.activation_function[layer_type])
+        if not self.weights:
+            self.weights.append(np.zeros((self.input_size, neuron_size), self.data_type))
+        else:
+            next_layers_input_size = self.weights[-1].shape[1]
+            self.weights.append(np.zeros((next_layers_input_size, neuron_size), self.data_type))
         self.biases.append(np.zeros(neuron_size, self.data_type))
 
-    # Add an output layer to the neural network
     def add_output_layer(self, layer_type):
-        # Append the activation function to the layers list
+        """
+        Add an output layer to the neural network.
+
+        Parameters:
+        layer_type (str): Type of activation function for the layer.
+        """
         self.layers.append(self.activation_function[layer_type])
-        # If there are no weights, initialize the weights for the input layer
         if not self.weights:
-            # Initialize the weights for the input layer
             self.weights.append(np.zeros((self.input_size, self.output_size), self.data_type))
-        # If there are weights, initialize the weights for the next layer
         else:
-            # Get the size of the output layer's input
             output_layers_input_size = self.weights[-1].shape[1]
-            # Initialize the weights for the output layer
             self.weights.append(np.zeros((output_layers_input_size, self.output_size), self.data_type))
-        # Initialize the biases for the output layer based on the output size
         self.biases.append(np.zeros(self.output_size, self.data_type))
 
-    @staticmethod
-    @njit
-    def calculate_loss(outputs, targets):
+
+    def calculate_loss(self, outputs, targets):
+        """
+        Calculate the loss using CrossEntropy.
+
+        Parameters:
+        outputs (np.ndarray): Predictions from the network.
+        targets (np.ndarray): True labels.
+
+        Returns:
+        float: Calculated loss.
+        """
         epsilon = 1e-7
         loss = -np.sum(targets * np.log(outputs + epsilon)) / targets.shape[0]
         return loss
 
-    # Forward pass through the neural network
     def forward(self, x):
-        # Initialize the outputs with the input
+        """
+        Perform a forward pass through the network.
+
+        Parameters:
+        x (np.ndarray): Input data.
+
+        Returns:
+        np.ndarray: Output after forward pass.
+        """
         outputs = x
-        # Loop through the layers, calculate the outputs, and feed them to the next layer
         for i in range(len(self.layers)):
-            # Calculate the outputs for each layer
             outputs = self.layers[i](np.dot(outputs, self.weights[i]) + self.biases[i])
-        # Return the final outputs
         return outputs
 
     def flatten_weights(self):
-        """Flatten the weight matrices into a single 1D array."""
+        """
+        Flatten the weight matrices into a single 1D array.
+
+        Returns:
+        np.ndarray: Flattened weights and biases.
+        """
         flat_weights = np.concatenate([w.flatten() for w in self.weights] + [b.flatten() for b in self.biases])
         return flat_weights
 
     def reshape_weights(self, flat_weights):
-        """Reshape a 1D array of weights back into the original weight matrices."""
+        """
+        Reshape a 1D array of weights back into the original weight matrices.
+
+        Parameters:
+        flat_weights (np.ndarray): Flattened weights and biases.
+
+        Returns:
+        tuple: Reshaped weights and biases.
+        """
         weights, biases = [], []
         index = 0
         for w in self.weights:
@@ -108,29 +131,39 @@ class Quantized_NN:
             index += size
         return weights, biases
 
-
     def get_parameters(self):
-        # Return the flattened weights and biases
+        """
+        Get the flattened weights and biases.
+
+        Returns:
+        np.ndarray: Flattened weights and biases.
+        """
         flat_parameters = self.flatten_weights()
         return flat_parameters
 
     def set_parameters(self, flat_parameters):
-        # Reshape and set the weights and biases from flattened parameters
+        """
+        Set the weights and biases from flattened parameters.
+
+        Parameters:
+        flat_parameters (np.ndarray): Flattened weights and biases.
+        """
         weights, biases = self.reshape_weights(flat_parameters)
         self.weights = weights
         self.biases = biases
 
-    '''# Return the weights and biases of the neural network
-    def get_parameters(self):
-        return [self.weights, self.biases]
-
-    # Set the weights and biases of the neural network
-    def set_parameters(self, new_parameters):
-        self.weights = new_parameters[0]
-        self.biases = new_parameters[1]'''
-
-    # Fit the neural network using the specified optimizer
     def fit(self, X, y, epochs):
+        """
+        Fit the neural network using the specified optimizer.
+
+        Parameters:
+        X (np.ndarray): Training data.
+        y (np.ndarray): Training labels.
+        epochs (int): Number of epochs to train.
+
+        Returns:
+        list: Training progress over epochs.
+        """
         training_progress = None
         if self.optimizer is None:
             raise ValueError("Optimizer not set. Please set an optimizer before training the neural network.")
@@ -138,15 +171,20 @@ class Quantized_NN:
             training_progress = self.optimizer.train(X, y, epochs)
         return training_progress
 
-    # Predict the output of the neural network
     def predict(self, X):
+        """
+        Predict the output of the neural network.
+
+        Parameters:
+        X (np.ndarray): Input data.
+
+        Returns:
+        np.ndarray: Predicted output.
+        """
         return self.forward(X)
 
     # Activation functions
-
-    @staticmethod
-    @njit
-    def sigmoid(x):
+    def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
 
     @staticmethod
@@ -187,7 +225,7 @@ class Quantized_NN:
     @staticmethod
     @njit
     def dropout(x, rate):
-        return x * np.random.binomial(1, 1-rate, size=x.shape)
+        return x * np.random.binomial(1, 1 - rate, size=x.shape)
 
     @staticmethod
     @njit

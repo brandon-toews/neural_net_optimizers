@@ -17,7 +17,6 @@ class GeneticAlgorithm:
         }
 
     @staticmethod
-    @njit
     def generate_population(initial_individual, population_size, data_type, weight_range=2):
         low = int(np.iinfo(data_type).min * 0.66) # -self.nn.data_type(weight_range / 2)
         high = int(np.iinfo(data_type).max * 0.66) # self.nn.data_type(weight_range / 2)
@@ -82,7 +81,6 @@ class GeneticAlgorithm:
         return child1, child2
 
     @staticmethod
-    @njit
     def crossover(parent1, parent2):
         crossover_mask = np.random.rand(parent1.shape[0]) < 0.5
         child1, child2 = np.copy(parent1), np.copy(parent2)
@@ -92,7 +90,6 @@ class GeneticAlgorithm:
 
 
     @staticmethod
-    @njit
     def mutate(individual, mutation_rate, data_type):
         if np.random.rand() < mutation_rate:
             min_delta = np.iinfo(data_type).min
@@ -129,14 +126,13 @@ class GeneticAlgorithm:
         # criterion = tnn.MSELoss()
         # loss = criterion(predictions, y)
 
-    @staticmethod
-    @njit
-    def MSE(predictions, y):
+
+    def MSE(self, predictions, y):
         error = np.mean((predictions - y) ** 2)
+        self.nn.train_losses.append(error)
         return 1 / (error + 1)
 
     @staticmethod
-    @njit
     def CrossEntropy(predictions, y):
         # loss = self.nn.calculate_loss(predictions, y)
         epsilon = 1e-7
