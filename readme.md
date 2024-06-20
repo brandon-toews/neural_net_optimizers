@@ -11,6 +11,9 @@
 
 This project aims to compare the performance of various neural network models and optimization algorithms on different datasets. The models include standard neural networks, quantized neural networks, and models implemented in PyTorch. The optimization algorithms include Genetic Algorithm (GA) and Particle Swarm Optimization (PSO).
 
+## Walkthrough
+![Video walkthrough](walkthrough.mkv)
+
 ## Models and Optimizers
 
 ### Custom Models
@@ -59,7 +62,7 @@ This project aims to compare the performance of various neural network models an
 
 ## File Structure
 
-### 📄 `main.py`
+### 📄 `xor_testing.py`
 This file is the entry point for the XOR problem comparisons. It trains and evaluates multiple models using different optimization algorithms and plots the results.
 
 ### 📄 `mnist_testing.py`
