@@ -12,9 +12,10 @@
 This project aims to compare the performance of various neural network models and optimization algorithms on different datasets. The models include standard neural networks, quantized neural networks, and models implemented in PyTorch. The optimization algorithms include Genetic Algorithm (GA) and Particle Swarm Optimization (PSO).
 
 ## Walkthrough
-<video src="output.mp4" width="320" height="240" type="video/mp4" controls></video>
-
-![Video walkthrough](walkthrough.mkv)
+<video width="320" height="240" controls>
+  <source src="output.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ## Models and Optimizers
 
