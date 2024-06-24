@@ -1,4 +1,4 @@
-# Neural Network Optimization Comparison
+# Neural Network Optimization Algorithms
 
 ## Getting Started 🚀
 
@@ -7,18 +7,16 @@
 3. Run script for XOR Problem: `python xor_testing.py`
 4. Run script for MNIST Dataset: `python mnist_testing.py`
 
+## Video Walkthrough 📹
+
+[![Neural Network Optimization Algorithms](https://img.youtube.com/vi/VIDEO_ID/0.jpg)](https://brandon-toews.github.io/portfolio/posts/neural_net_optimizers/neural_net_optimizers.html#video-walkthrough)
+
+
 ## Project Description
 
 This project aims to compare the performance of various neural network models and optimization algorithms on different datasets. The models include standard neural networks, quantized neural networks, and models implemented in PyTorch. The optimization algorithms include Genetic Algorithm (GA) and Particle Swarm Optimization (PSO).
 
-## Walkthrough
-<video width="320" height="240" controls>
-  <source src="output.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
-
 ## Models and Optimizers
-
 ### Custom Models
 - **Neural Network**: A basic feedforward neural network implemented from scratch.
 - **Quantized Neural Network**: A neural network with quantized weights for improved efficiency.
